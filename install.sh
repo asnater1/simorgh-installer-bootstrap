@@ -6,18 +6,46 @@ umask 077
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
 
-install_packages() {
-    local plan
-    plan=$(apt-get -o Acquire::AllowInsecureRepositories=false -o APT::Get::AllowUnauthenticated=false -s --no-remove --no-install-recommends install "$@")
-    if grep -Eq '^(Remv |Purg |Inst [^ ]+ \[)' <<<"$plan"; then
-        echo 'Bootstrap packages would remove or upgrade installed packages.' >&2
-        return 2
-    fi
-    apt-get -o Acquire::AllowInsecureRepositories=false -o APT::Get::AllowUnauthenticated=false -y --no-remove --no-install-recommends install "$@"
+tool_ready() {
+    local binary
+    case "$1" in
+        nftables) binary=/usr/sbin/nft;;
+        *) binary=/usr/bin/$1;;
+    esac
+    [[ -x "$binary" && $(dpkg-query -W -f='${db:Status-Status}' "$1" 2>/dev/null) == installed ]]
 }
 
-apt-get -o Acquire::AllowInsecureRepositories=false -o APT::Get::AllowUnauthenticated=false -o APT::Update::Error-Mode=any update
-install_packages curl gh python3.12 nftables fail2ban
+
+cat > "$work/ubuntu.sources" <<'SIMORGH_UBUNTU_SOURCES'
+Types: deb
+URIs: http://archive.ubuntu.com/ubuntu/
+Suites: noble noble-updates
+Components: main universe restricted multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+Types: deb
+URIs: http://security.ubuntu.com/ubuntu/
+Suites: noble-security
+Components: main universe restricted multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+SIMORGH_UBUNTU_SOURCES
+apt_ubuntu() {
+    apt-get -o Acquire::AllowInsecureRepositories=false -o Acquire::AllowDowngradeToInsecureRepositories=false -o APT::Get::AllowUnauthenticated=false -o APT::Get::Allow-Downgrades=false -o "Dir::Etc::sourcelist=$work/ubuntu.sources" -o Dir::Etc::sourceparts=- "$@"
+}
+missing=()
+for package in curl gh python3.12 nftables fail2ban; do
+    if ! tool_ready "$package"; then missing+=("$package"); fi
+done
+if ((${#missing[@]})); then
+    apt_ubuntu -o APT::Update::Error-Mode=any update
+    plan=$(apt_ubuntu -s --no-remove --no-install-recommends install "${missing[@]}")
+    if grep -Eq '^(Remv |Purg |Inst [^ ]+ \[)' <<<"$plan"; then
+        echo 'Bootstrap packages would remove or upgrade installed packages.' >&2
+        exit 2
+    fi
+    apt_ubuntu -y --no-remove --no-install-recommends install "${missing[@]}"
+fi
+
 stage_tool() {
     local url=$1 hash=$2 member=$3 path=$4 binary_hash=$5
     if [[ -e "$path" || -L "$path" ]]; then
@@ -100,6 +128,6 @@ if __name__ == "__main__":
 SIMORGH_DEVICE_FLOW
 )
 export GH_TOKEN
-gh release download v0.0.913 -R asnater1/Simorgh -p github_bootstrap.py -D "$work"
+gh release download v0.0.914 -R asnater1/Simorgh -p github_bootstrap.py -D "$work"
 printf '%s  %s\n' 7ed9ed274ca05d543540fc775794dbbb9d5490c7a9934974f09c1b8ce6d82f8f "$work/github_bootstrap.py" | sha256sum -c --status
-/usr/bin/python3.12 -I -B "$work/github_bootstrap.py" --tag v0.0.913 --source 2a5e985bfc6649d92822bc2d2b3bd99c328ef16e --operator-sha aeca5944de599d9015081e42a0a6a2b49ba7a406d75b5fffd755723739aef54e --key-sha eecb7936d5e92425d0a7afb5f41c0ddf467eecd1e3dc7ac25f63d02f76ebae20 --manifest-sha 8b839e64cfab1acbd40db971ac5049bd9c405868755ad9f20cffcbec8c9f450a
+/usr/bin/python3.12 -I -B "$work/github_bootstrap.py" --tag v0.0.914 --source 17f2162d63fa973ff3e04b05cb6c13e347404c08 --operator-sha ea66f5eb38667151d7035f41bc726ff514c579514ca00e86c2610a2d87281ca1 --key-sha eecb7936d5e92425d0a7afb5f41c0ddf467eecd1e3dc7ac25f63d02f76ebae20 --manifest-sha 476d625ae563e512ebe603f108209f4752a67f297254762b52af8cf14f4e9568

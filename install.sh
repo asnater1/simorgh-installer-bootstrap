@@ -100,6 +100,6 @@ if __name__ == "__main__":
 SIMORGH_DEVICE_FLOW
 )
 export GH_TOKEN
-gh release download v0.0.912 -R asnater1/Simorgh -p github_bootstrap.py -D "$work"
+gh release download v0.0.913 -R asnater1/Simorgh -p github_bootstrap.py -D "$work"
 printf '%s  %s\n' 7ed9ed274ca05d543540fc775794dbbb9d5490c7a9934974f09c1b8ce6d82f8f "$work/github_bootstrap.py" | sha256sum -c --status
-/usr/bin/python3.12 -I -B "$work/github_bootstrap.py" --tag v0.0.912 --source cb94cc24465c7d5f86c15df4deabd18698eefeda --operator-sha 7288b52cb4ab7cd931a581fc1fddd51cbf1b437464191664d220cb18ce65c43b --key-sha eecb7936d5e92425d0a7afb5f41c0ddf467eecd1e3dc7ac25f63d02f76ebae20 --manifest-sha ff85b1007f9232b3c1dc75b46cbabcb7d6c48254aad556f6fd90595efa50c12b
+/usr/bin/python3.12 -I -B "$work/github_bootstrap.py" --tag v0.0.913 --source 2a5e985bfc6649d92822bc2d2b3bd99c328ef16e --operator-sha aeca5944de599d9015081e42a0a6a2b49ba7a406d75b5fffd755723739aef54e --key-sha eecb7936d5e92425d0a7afb5f41c0ddf467eecd1e3dc7ac25f63d02f76ebae20 --manifest-sha 8b839e64cfab1acbd40db971ac5049bd9c405868755ad9f20cffcbec8c9f450a
